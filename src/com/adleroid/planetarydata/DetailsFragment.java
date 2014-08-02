@@ -29,6 +29,10 @@ public class DetailsFragment extends Fragment {
 		return df;
 	}
 
+	/**
+	 * Now that the activity has been created we can retrieve the index stored
+	 * in the arguments.
+	 */
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
@@ -36,18 +40,18 @@ public class DetailsFragment extends Fragment {
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = null;
 
-		// only create view if fragment is part of container, otherwise
-		// it will not be displayed
+		// only one of our layouts has a container which will hold this fragment
+		// so only create view if fragment is part of container, otherwise
+		// it will not be displayed and there's no point in constructing the view
 		if (container != null) {
-			mIndex = getArguments().getInt(ARG_INDEX, 0);
+			Bundle args = getArguments();
+			mIndex = args != null ? args.getInt(ARG_INDEX, 0) : 0;
 			final Data.Details dd = Data.DETAILS[mIndex];
 			view = inflater.inflate(R.layout.details_layout, container, false);
-			TextView text = (TextView) view.findViewById(
-					R.id.detailsText);
+			TextView text = (TextView) view.findViewById(R.id.detailsText);
 			text.setText(dd.description);
 			text.setCompoundDrawablePadding(8);
 			text.setCompoundDrawablesWithIntrinsicBounds(

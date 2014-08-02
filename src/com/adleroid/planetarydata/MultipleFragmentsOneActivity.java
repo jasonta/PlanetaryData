@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 public class MultipleFragmentsOneActivity extends Activity implements TitlesFragment.OnTitleSelectedListener {
-	
+
 	private final static String TITLES_FRAGMENT_TAG = "titles";
 	private final static String DETAILS_FRAGMENT_TAG = "details";
 	private final static int TITLES_ID = 101;
@@ -19,8 +19,7 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 	private static final String ARG_DETAILS_DISPLAYED = "detailsDisplayed";
 
 	private boolean mDualPane;
-	private boolean mDetailsDisplayed; // only important when activity is
-										// displaying one fragment only
+	private boolean mDetailsDisplayed; // only important when activity is displaying one fragment only
 	private int mCurrentIndex = 0;
 
 	@Override
@@ -28,25 +27,20 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.one_activity);
 
-		// make sure to restore fragments if necessary
+		// restore from saved instance if necessary
 		if (savedInstanceState != null) {
-			mCurrentIndex = savedInstanceState.getInt(
-					DetailsFragment.ARG_INDEX, 0);
-			mDetailsDisplayed = savedInstanceState.getBoolean(
-					ARG_DETAILS_DISPLAYED);
+			mCurrentIndex = savedInstanceState.getInt(DetailsFragment.ARG_INDEX, 0);
+			mDetailsDisplayed = savedInstanceState.getBoolean(ARG_DETAILS_DISPLAYED);
+		}
 
-			// the inner layouts containing the fragments are not automatically
-			// recreated by android so we need to recreate them here
-			// see below for why inner layouts were necessary
-			if (isLayoutSizeAtLeast(Configuration.SCREENLAYOUT_SIZE_LARGE)) {
-				showBothFragments();
-			}
+		// if display is large or in landscape orientation we can show both titles and details fragments
+		Configuration config = getResources().getConfiguration();
+		boolean isLargeOrLandscape = config.isLayoutSizeAtLeast(Configuration.SCREENLAYOUT_SIZE_LARGE)
+				|| config.orientation == Configuration.ORIENTATION_LANDSCAPE;
+		if (isLargeOrLandscape) {
+			showBothFragments();
 		} else {
-			if (isLayoutSizeAtLeast(Configuration.SCREENLAYOUT_SIZE_LARGE)) {
-				showBothFragments();
-			} else {
-				showOneFragment();
-			}
+			showOneFragment();
 		}
 	}
 
@@ -57,18 +51,24 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 		outState.putBoolean(ARG_DETAILS_DISPLAYED, mDetailsDisplayed);
 	}
 
-	/**
-	 * Mirrors SDK method: Configuration.isLayoutSizeAtLeast, API 11+
-	 * 
-	 * @param size
-	 * @return
-	 */
-	private boolean isLayoutSizeAtLeast(int size) {
-		Configuration config = getResources().getConfiguration();
-		final int screenSize = config.screenLayout
-				& Configuration.SCREENLAYOUT_SIZE_MASK;
-		return (screenSize == Configuration.SCREENLAYOUT_SIZE_UNDEFINED) ? false
-				: screenSize >= size;
+	private void removeDetailsFragment() {
+		FragmentManager fm = getFragmentManager();
+		DetailsFragment detailsFragment = (DetailsFragment) fm.findFragmentById(DETAILS_ID);
+		if (detailsFragment != null && detailsFragment.isAdded()) {
+			FragmentTransaction trans = fm.beginTransaction();
+			trans.remove(detailsFragment);
+			trans.commit();
+		}
+	}
+
+	private void removeTitlesFragment() {
+		FragmentManager fm = getFragmentManager();
+		TitlesFragment titlesFragment = (TitlesFragment) fm.findFragmentById(TITLES_ID);
+		if (titlesFragment != null && titlesFragment.isAdded()) {
+			FragmentTransaction trans = fm.beginTransaction();
+			trans.remove(titlesFragment);
+			trans.commit();
+		}
 	}
 
 	/**
@@ -78,39 +78,62 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 	private void showOneFragment() {
 		mDualPane = false;
 
-		FragmentManager fm = getFragmentManager();
-		TitlesFragment titlesFragment = new TitlesFragment();
-		FragmentTransaction trans = fm.beginTransaction();
-		trans.add(android.R.id.content, titlesFragment, TITLES_FRAGMENT_TAG);
-		trans.commit();
+		LinearLayout layout = (LinearLayout) findViewById(R.id.one_activity_parent_layout);
+		layout.removeAllViews();
 
+		FragmentManager fm = getFragmentManager();
+		FragmentTransaction trans = fm.beginTransaction();
 		if (mDetailsDisplayed) {
-			displayDetailsOnly();
+			removeTitlesFragment();
+
+			DetailsFragment detailsFragment = new DetailsFragment();
+			trans.add(R.id.one_activity_parent_layout, detailsFragment, DETAILS_FRAGMENT_TAG);
+			trans.commit();
+		} else {
+			removeDetailsFragment();
+
+			TitlesFragment titlesFragment = new TitlesFragment();
+			trans.add(R.id.one_activity_parent_layout, titlesFragment, TITLES_FRAGMENT_TAG);
+			trans.commit();
 		}
 	}
 
 	private void showBothFragments() {
 		mDualPane = true;
 
-		// we need to add inner layouts to the main layout to account for
-		// the weights of the fragments in our linear layout
-		FragmentManager fm = getFragmentManager();
-		TitlesFragment titlesFragment = new TitlesFragment();
+		// we are using a linear layout but since fragments do not support weights we need to add inner layouts,
+		// so the resulting layout will look like:
+		// <LinearLayout>
+		//     <FrameLayout android:weight="1" ... >
+		//         <fragment "titles">
+		//     </FrameLayout>
+		//     <FrameLayout android:weight="2" ... >
+		//         <fragment "details">
+		//     </FrameLayout>
+		// </LinearLayout>
+		
+		// clear out any existing layout views and fragments
 		LinearLayout layout = (LinearLayout) findViewById(R.id.one_activity_parent_layout);
+		layout.removeAllViews();
+		removeDetailsFragment();
+		removeTitlesFragment();
+
+		FragmentManager fm = getFragmentManager();
+		FragmentTransaction trans = fm.beginTransaction();
+
 		FrameLayout titlesLayout = new FrameLayout(this);
 		titlesLayout.setId(TITLES_ID);
-		titlesLayout.setLayoutParams(new LinearLayout.LayoutParams(0,
-				LayoutParams.MATCH_PARENT, 2.0f));
-		FragmentTransaction trans = fm.beginTransaction();
+		titlesLayout.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1.0f));
+		TitlesFragment titlesFragment = new TitlesFragment();
 		trans.add(TITLES_ID, titlesFragment, TITLES_FRAGMENT_TAG);
 		trans.commit();
 		layout.addView(titlesLayout);
 
 		FrameLayout detailsLayout = new FrameLayout(this);
 		detailsLayout.setId(DETAILS_ID);
-		detailsLayout.setLayoutParams(new LinearLayout.LayoutParams(0,
-				LayoutParams.MATCH_PARENT, 3.0f));
+		detailsLayout.setLayoutParams(new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 2.0f));
 		DetailsFragment detailsFragment = new DetailsFragment();
+		// add current index to fragment so that we display the correct details
 		Bundle args = new Bundle();
 		titlesFragment = (TitlesFragment) fm.findFragmentById(TITLES_ID);
 		args.putInt(DetailsFragment.ARG_INDEX, mCurrentIndex);
@@ -125,6 +148,9 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 	public void onBackPressed() {
 		super.onBackPressed();
 
+		// if back is pressed while only details fragment is displayed (mDualMode == false), we will 
+		// return to titles fragment and if not the activity will finish - either way we can safely 
+		// set the details displayed flag to false here
 		mDetailsDisplayed = false;
 	}
 
@@ -135,11 +161,9 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 		if (mDualPane) {
 			// change content of details fragment
 			FragmentManager fm = getFragmentManager();
-			DetailsFragment details = (DetailsFragment)
-					fm.findFragmentById(DETAILS_ID);
+			DetailsFragment details = (DetailsFragment) fm.findFragmentById(DETAILS_ID);
 			if (details == null || details.getCurrentIndex() != position) {
-				// recreate the details fragment with the new position
-				// and replace the old one
+				// recreate the details fragment with the new position and replace the old one
 				details = DetailsFragment.create(position);
 				FragmentTransaction trans = fm.beginTransaction();
 				trans.replace(DETAILS_ID, details);
@@ -147,28 +171,21 @@ public class MultipleFragmentsOneActivity extends Activity implements TitlesFrag
 				trans.commit();
 			}
 		} else {
-			displayDetailsOnly();
-		}
-	}
+			// replace titles fragment with details fragment
+			mDetailsDisplayed = true;
+			FragmentManager fm = getFragmentManager();
+			DetailsFragment details = (DetailsFragment) fm.findFragmentById(DETAILS_ID);
+			if (details == null || details.getCurrentIndex() != mCurrentIndex) {
+				details = DetailsFragment.create(mCurrentIndex);
 
-	private void displayDetailsOnly() {
-		// replace titles fragment with details fragment
-		mDetailsDisplayed = true;
-		FragmentManager fm = getFragmentManager();
-		DetailsFragment details = (DetailsFragment)
-				fm.findFragmentById(TITLES_ID);
-		if (details == null || details.getCurrentIndex() != mCurrentIndex) {
-			details = DetailsFragment.create(mCurrentIndex);
-
-			FragmentTransaction trans = fm.beginTransaction();
-			trans.replace(
-					fm.findFragmentByTag(TITLES_FRAGMENT_TAG).getId(),
-					details);
-			trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-			// need to add to the back stack so that the back key will go
-			// back to the titles fragment
-			trans.addToBackStack(null);
-			trans.commit();
+				FragmentTransaction trans = fm.beginTransaction();
+				trans.replace(fm.findFragmentByTag(TITLES_FRAGMENT_TAG).getId(), details);
+				trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+				// need to add to the back stack so that the back key will go back to the titles fragment
+				// no need to name the back stack state so just pass null
+				trans.addToBackStack(null);
+				trans.commit();
+			}
 		}
 	}
 }

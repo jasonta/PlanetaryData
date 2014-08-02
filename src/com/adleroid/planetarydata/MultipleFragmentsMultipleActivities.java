@@ -27,9 +27,10 @@ public class MultipleFragmentsMultipleActivities extends Activity implements Tit
 			mShownIndex = savedInstanceState.getInt(ARG_SHOWN_INDEX);
 		}
 
+		// we can determine if the layout supports both titles and details by checking for the
+		// existence of the detailsLayout since that view is only present in 'dual pane' mode
 		View detailsFrame = findViewById(R.id.detailsLayout);
-		mDualPane = (detailsFrame != null
-				&& detailsFrame.getVisibility() == View.VISIBLE);
+		mDualPane = (detailsFrame != null && detailsFrame.getVisibility() == View.VISIBLE);
 
 		if (mDualPane) {
 			showDetails(mCurrentIndex);
