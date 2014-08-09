@@ -11,6 +11,11 @@ public class Data {
 		final String title;
 		final int resId;
 		final String description;
+
+		@Override
+		public String toString() {
+			return "Details [title=" + title + ", resId=" + resId + ", description=" + description + "]";
+		}
 	}
 
 	final static Details[] DETAILS = {
