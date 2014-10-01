@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/one_activity_parent_layout"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:id="@+id/one_activity_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal" >
@@ -9,6 +10,7 @@
         android:id="@+id/titlesFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        class="com.adleroid.planetarydata.TitlesFragment" />
+        class="com.adleroid.planetarydata.TitlesFragment"
+        tools:layout="@layout/title_item_layout"/>
 
 </LinearLayout>

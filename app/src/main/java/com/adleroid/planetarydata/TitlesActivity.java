@@ -7,7 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
-public class MultipleFragmentsMultipleActivities extends Activity implements TitlesFragment.OnTitleSelectedListener {
+public class TitlesActivity extends Activity implements TitlesFragment.OnTitleSelectedListener {
 
 	private static final String DETAILS_FRAGMENT_TAG = "details";
 	private static final String ARG_CURRENT_INDEX = "currentIndex";
@@ -20,7 +20,7 @@ public class MultipleFragmentsMultipleActivities extends Activity implements Tit
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.multiple_activities);
+		setContentView(R.layout.titles_activity);
 
 		if (savedInstanceState != null) {
 			mCurrentIndex = savedInstanceState.getInt(ARG_CURRENT_INDEX);
